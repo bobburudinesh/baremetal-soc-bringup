@@ -3,7 +3,7 @@ CC      := $(CROSS)-gcc
 LD      := $(CROSS)-ld
 OBJCOPY := $(CROSS)-objcopy
 
-CGFLAGS := -O0 -g -nostdlib -Wall -Wextra -ffreestanding -nostartfiles
+CFLAGS := -O0 -g -nostdlib -Wall -Wextra -ffreestanding -nostartfiles
 LDFLAGS := -T boards/rpi5/linker.ld -nostdlib -nostartfiles
 
 OUT := build/rpi5
