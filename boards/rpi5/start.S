@@ -17,6 +17,7 @@ _start:
 2:
     /* Read Current EL into x3, so we have something to inspect*/
     mrs     x3, CurrentEL
+    bl      main_bringup
 
     nop
     nop
