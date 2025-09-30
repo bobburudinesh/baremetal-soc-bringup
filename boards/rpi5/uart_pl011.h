@@ -18,5 +18,6 @@
 #define UART_ICR                0x044
 #define UART_DMACR              0x048
 
-#define UART_TXFF               (1u << 5)   //Transmit FIFO Full
+#define FR_TXFF               (1u << 5)   //Transmit FIFO Full
 #define FR_BUSY                 (1u << 3)   // Transmit busy
+

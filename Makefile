@@ -6,6 +6,10 @@ OBJCOPY := $(CROSS)-objcopy
 CFLAGS := -O0 -g -nostdlib -Wall -Wextra -ffreestanding -nostartfiles
 LDFLAGS := -T boards/rpi5/linker.ld -nostdlib -nostartfiles
 
+CSRCS := boards/rpi5/uart_pl011.c apps/00_hello/kmain.c
+COBJS := $(patsubst %.c, build/rpi5/%.o, $(CSRCS))
+CFLAGS += -Icommon -Iboards/rpi5
+
 OUT := build/rpi5
 OBJ := $(OUT)/start.o
 ELF := $(OUT)/hello.elf
@@ -13,13 +17,17 @@ BIN := $(OUT)/kernel8.img
 
 all: $(BIN)
 
-$(OUT):
-	mkdir -p $(OUT)
-$(OUT)/start.o: boards/rpi5/start.S | $(OUT)
+build/rpi5/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
-$(ELF): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
+
+$(OUT)/start.o: boards/rpi5/start.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+$(ELF): $(OBJ) $(COBJS)
+	$(CC) $(CFLAGS) $(OBJ) $(COBJS) $(LDFLAGS) -o $@
 $(BIN): $(ELF)
+	@mkdir -p $(dir $@)
 	$(OBJCOPY) -O binary $(ELF) $(BIN)
 clean:
 	rm -rf build
