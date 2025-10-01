@@ -1,34 +1,53 @@
-CROSS   ?= aarch64-linux-gnu
-CC      := $(CROSS)-gcc
-LD      := $(CROSS)-ld
-OBJCOPY := $(CROSS)-objcopy
 
-CFLAGS := -O0 -g -nostdlib -Wall -Wextra -ffreestanding -nostartfiles
-LDFLAGS := -T boards/rpi5/linker.ld -nostdlib -nostartfiles
+CROSS    ?= aarch64-linux-gnu
+CC       := $(CROSS)-gcc
+OBJCOPY  := $(CROSS)-objcopy
 
-CSRCS := boards/rpi5/uart_pl011.c apps/00_hello/kmain.c
-COBJS := $(patsubst %.c, build/rpi5/%.o, $(CSRCS))
-CFLAGS += -Icommon -Iboards/rpi5
+# --- Compile / Link flags ---
+CFLAGS  := -O0 -g -ffreestanding -nostdlib -nostartfiles -Wall -Wextra -MMD -MP
+CFLAGS  += -Icommon -Iboards/rpi5
+# (optional) help linker drop unused sections once we grow:
+CFLAGS  += -ffunction-sections -fdata-sections
+LDFLAGS := -T boards/rpi5/linker.ld -nostdlib -nostartfiles -Wl,--gc-sections
 
-OUT := build/rpi5
-OBJ := $(OUT)/start.o
-ELF := $(OUT)/hello.elf
-BIN := $(OUT)/kernel8.img
+# --- Files / Paths ---
+OUT   := build/rpi5
+ELF   := $(OUT)/hello.elf
+BIN   := $(OUT)/kernel8.img
 
+ASMOBJ := $(OUT)/start.o
+CSRCS  := boards/rpi5/uart_pl011.c apps/00_hello/kmain.c
+COBJS  := $(patsubst %.c,$(OUT)/%.o,$(CSRCS))
+DEPS   := $(COBJS:.o=.d) $(ASMOBJ:.o=.d)
+
+# --- Default ---
 all: $(BIN)
 
-build/rpi5/%.o: %.c
+# --- Rules ---
+$(OUT):
+	@mkdir -p $(OUT)/boards/rpi5 $(OUT)/apps/00_hello
+
+$(OUT)/start.o: boards/rpi5/start.S | $(OUT)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OUT)/%.o: %.c | $(OUT)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OUT)/start.o: boards/rpi5/start.S
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
-$(ELF): $(OBJ) $(COBJS)
-	$(CC) $(CFLAGS) $(OBJ) $(COBJS) $(LDFLAGS) -o $@
+$(ELF): $(ASMOBJ) $(COBJS)
+	$(CC) $(CFLAGS) $(ASMOBJ) $(COBJS) $(LDFLAGS) -o $@
+
 $(BIN): $(ELF)
 	@mkdir -p $(dir $@)
 	$(OBJCOPY) -O binary $(ELF) $(BIN)
+
+# --- Utilities (optional but handy) ---
+size: $(ELF)
+	@ls -lh $(BIN)
+	@$(CROSS)-nm $(ELF) | egrep ' kmain$| uart_(init|puts|putc)$$' || true
+
 clean:
 	rm -rf build
-.PHONY: all clean
+
+.PHONY: all clean size
+-include $(DEPS)

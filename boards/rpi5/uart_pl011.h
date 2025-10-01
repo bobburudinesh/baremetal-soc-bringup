@@ -21,3 +21,7 @@
 #define FR_TXFF               (1u << 5)   //Transmit FIFO Full
 #define FR_BUSY                 (1u << 3)   // Transmit busy
 
+#define UART_CR_UARTEN   (1u << 0)
+#define UART_CR_TXE      (1u << 8)
+#define UART_LCRH_WLEN_8 (3u << 5)
+#define UART_ICR_ALL     0x7FFu
